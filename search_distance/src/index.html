@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>防災マップ</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <style>
+        #map {
+            height: calc(100vh - 120px); /* ヘッダーとフッターの高さを除外 */
+            width: 100%;
+        }
+        .footer {
+            height: 60px;
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <header class="bg-primary text-white text-center py-3">
+        <h3>厚木市防災マップ</h3>
+    </header>
+    <div id="map"></div>
+    <footer class="footer bg-primary text-white text-center py-3">
+        <p>© 2024 AEROASAHI INTERNSHIP</p>
+    </footer>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 地図の初期設定
+            const map = L.map('map').setView([35.682839, 139.759455], 10);
+
+            // ベースレイヤーの設定
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            });
+
+            osm.addTo(map);
+
+            //*********************************【追加】**********************************
+            let points = [];
+            let markers = [];
+            let lines = [];
+
+            // 地図上でクリックした2点間の距離を計測
+            map.on('click', (e) => {
+                const { latlng } = e;
+
+                // クリックした点を保存
+                points.push(latlng);
+
+                // 1点目にマーカーを表示
+                const marker = L.marker(latlng).addTo(map);
+                markers.push(marker);
+
+                // クリックしたマーカーを削除する機能を追加
+                marker.on('click', function () {
+                    map.removeLayer(marker);
+                    markers = markers.filter(m => m !== marker);
+                });
+
+                // 2点目がクリックされた場合、距離を計算
+                if (points.length === 2) {
+                    const distance = points[0].distanceTo(points[1]);
+
+                    // 2点目のマーカーに距離情報を表示
+                    marker.bindPopup(`距離: ${distance.toFixed(2)} メートル`).openPopup();
+
+                    // 2点間に赤い線を引く
+                    const line = L.polyline(points, { color: 'red' }).addTo(map);
+                    lines.push(line);
+
+                    // クリックした線を削除する機能を追加
+                    line.on('click', function () {
+                        map.removeLayer(line);
+                        lines = lines.filter(l => l !== line);
+                    });
+
+                    // 配列をリセットして次の計測に備える
+                    points = [];
+                }
+            });
+
+            // 地図を右クリックして全てのマーカーとラインを削除する
+            map.on('contextmenu', () => {
+                markers.forEach(marker => map.removeLayer(marker));
+                lines.forEach(line => map.removeLayer(line));
+                markers = [];
+                lines = [];
+                points = [];
+            });
+            //******************************【追加ここまで】******************************
+            
+        });
+    </script>
+</body>
+</html>
