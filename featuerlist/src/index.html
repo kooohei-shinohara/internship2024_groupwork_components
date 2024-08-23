@@ -47,12 +47,11 @@
                 <table class="table table-bordered">
                     <thead>
                         <tr>
-                            <th>属性名</th>
-                            <th>値</th>
+                            <th>避難所名</th>
                         </tr>
                     </thead>
                     <tbody id="infoTableBody">
-                        <!-- 属性データがここに表示されます -->
+                        <!-- 地物の名前がここに表示されます -->
                     </tbody>
                 </table>
             </div>
@@ -87,48 +86,34 @@
                     const shelterLayer = L.geoJSON(data, {
                         pointToLayer: (feature, latlng) => L.marker(latlng),
                         onEachFeature: (feature, layer) => {
-                            layer.on('click', () => {
-                                showInfoTable(feature.properties);
-                            });
                             layer.bindPopup(`<strong>${feature.properties.name}</strong>`);
                         }
                     }).addTo(map);
+
+                    // すべての避難所の名称をテーブルに表示
+                    showAllShelters(data);
                 } catch (error) {
                     console.error('Error fetching shelters data:', error);
                 }
             }
 
-            function showInfoTable(properties) {
+            function showAllShelters(data) {
                 const infoTableBody = document.getElementById('infoTableBody');
                 infoTableBody.innerHTML = ''; // 既存の行をクリア
 
-                for (const [key, value] of Object.entries(properties)) {
+                data.features.forEach(feature => {
                     const row = document.createElement('tr');
-                    const keyCell = document.createElement('td');
-                    keyCell.textContent = key;
-                    const valueCell = document.createElement('td');
-                    valueCell.textContent = value;
-                    row.appendChild(keyCell);
-                    row.appendChild(valueCell);
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = feature.properties.name;
+                    row.appendChild(nameCell);
                     infoTableBody.appendChild(row);
-                }
-            }
 
-            // 検索ボタンのイベントリスナーをDOMContentLoadedの中で定義
-            const searchButton = document.getElementById('searchButton');
-            if (searchButton) {
-                searchButton.addEventListener('click', () => {
-                    const searchInput = document.getElementById('searchInput').value.toLowerCase();
-                    if (shelterLayer) {
-                        shelterLayer.eachLayer((layer) => {
-                            const shelterName = layer.feature.properties.name.toLowerCase();
-                            if (shelterName.includes(searchInput)) {
-                                map.setView(layer.getLatLng(), 15);
-                                layer.openPopup();
-                                showInfoTable(layer.feature.properties); // 検索結果を表示
-                            }
-                        });
-                    }
+                    // 行をクリックした際に該当の地物にズーム
+                    row.addEventListener('click', () => {
+                        const latlng = L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]);
+                        map.setView(latlng, 15);
+                        shelterLayer.getLayers()[index].openPopup();
+                    });
                 });
             }
 
